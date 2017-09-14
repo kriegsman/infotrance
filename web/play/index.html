@@ -1,0 +1,331 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+	<head>
+		<title>infotran.cc</title>
+		
+		<!-- 
+			
+				infotrance rev 3.5, August 2010
+				
+				infotrance concept by Mark Kriegsman and Dan Garcia, March 2006
+					rev 3 coding by John Brayton and Mark Kriegsman
+					rev 3 stream selection by Mark Kriegsman
+					rev 3.1 stream choice preservation by Dan Garcia
+				 	rev 3.2 support for multiple static MP3 files by Mark Kriegsman, August 2009 
+					rev 3.3 support for podcasts, per-source volume and rate (QT only), 
+							and CoralCDN by Mark Kriegsman, September 2009
+					rev 3.4 support for external mysources.js files
+					rev 3.5 added volume sliders
+		-->
+		
+		<!-- 
+		  To turn off sliders, do this:
+			<style type="text/css">
+			    div.sliderContainer { display: none; }
+			</style>
+		-->	
+	</head>
+<body onKeyPress="doKey(window.event.keyCode)">
+
+<script>
+
+	// Global parameters
+	
+	var defaultInfoVolume 	= 125; // boost volume a little
+	var defaultInfoRate   	=  90; // a little slower than normal 
+	
+	var defaultTranceVolume =  90; // it's loud enough already
+	var defaultTranceRate   = 100; // normal
+	
+	var gUseCoralCDN 		= false; // causing playback issues :(
+	var gCoralCDNHostSuffix	= "http.l2.l1.l0.nyucd.net:8080"; // or ".nyud.net:8080" or just "nyud.net", but this is more compatible for RSS use they say
+	
+	var gPlaying            = true;
+	
+</script>
+
+<script src="utils.js"></script>
+<script src="pluginwrappers.js"></script>
+<script src="http://www.google.com/jsapi?key=ABQIAAAAedXI6jOx4-zFwXFYnESL5BQRpMkK8-2Na9NjYHUllJ4r36OOGhTOKINVqZGzRp-QcPUMW-jX-denRQ"></script>
+<script src="rss-support.js"></script>
+<script src="contentsources.js"></script>
+
+<!-- <script src="stutter.js" defer=true></script> -->
+
+<!-- from  carpe.ambiprospect.com/slider/ -->
+<script src="slider.js" xdefer=true></script>
+<link href="slider.css" rel="stylesheet" type="text/css" />
+<!-- end from carpe.ambiprospect.com/slider/ -->
+<script>
+function slidercallback( what) 
+{
+	var newvol = what.getAttribute('value');
+	if( what.getAttribute('id') == "infovolumeinput" ) {
+		getInfoPlayer().ITSetVolume( newvol );
+	} else {
+		getTrancePlayer().ITSetVolume( newvol );
+	}
+}
+</script>
+<!-- end slider callback -->
+
+
+<script>
+function PlayPause() {
+	if( gPlaying == true ) {
+		getInfoPlayer().ITStop();
+		getTrancePlayer().ITStop();
+		gPlaying = false;
+	} else {
+		getInfoPlayer().ITPlay();
+		getTrancePlayer().ITPlay();
+		gPlaying = true;
+	}
+}
+
+function doKey($key) {
+  if ($key == 32) {
+	  PlayPause();
+	  return false;
+  }
+}
+</script>
+
+<blockquote>
+<table border="0" name="contab">
+	<tr>
+		<td align="center">
+			<tt><font size=7>info</font></tt>
+		</td>
+		<td align="center">
+			<tt><font size=7>trance</font></tt>
+		</td>
+	</tr>
+	<tr>
+		<td align="center" id="infomenu">
+		</td>
+		<td align="center" id="trancemenu">
+		</td>
+	</tr>
+
+	<tr>
+		<td align="center">
+			<div class="sliderContainer">
+				<div class="carpe_vertical_slider_track" style="height: 50px; background-color: #fff; border-color: #fff;"> 
+					<div class="carpe_slider_slit" style="height: 50px; ">&nbsp;</div> 
+					<div 
+						class="carpe_slider"
+						id="infovolumeslider"
+						orientation="vertical"
+						distance="50"
+						display="infovolumeinput"
+						style="top: 25px;">&nbsp;</div> 
+				</div> 
+				<div class="carpe_slider_display_holder" style="background-color: #fff; border-color: #fff;"> 
+					<input 
+						class="carpe_slider_display"
+						id="infovolumeinput"
+						style="background: #fff;"
+						type="hidden"
+						from="0"
+						to="200"
+						valuecount="200"
+						value="100"
+						typelock="on" 
+						/> 
+				</div>
+			</div>
+		</td>
+		<td align="center">
+			<div class="sliderContainer">
+				<div class="carpe_vertical_slider_track" style="height: 50px; background-color: #fff; border-color: #fff;"> 
+					<div class="carpe_slider_slit" style="height: 50px; ">&nbsp;</div> 
+					<div 
+						class="carpe_slider"
+						id="trancevolumeslider"
+						orientation="vertical"
+						distance="50"
+						display="trancevolumeinput"
+						style="top: 25px;">&nbsp;</div> 
+				</div> 
+				<div class="carpe_slider_display_holder" style="background-color: #fff; border-color: #fff;"> 
+					<input 
+						class="carpe_slider_display"
+						id="trancevolumeinput"
+						style="background: #fff;"
+						type="hidden"
+						from="0"
+						to="200"
+						valuecount="200"
+						value="100"
+						typelock="on" 
+						/> 
+				</div>
+			</div>
+		</td>
+	</tr>
+
+	<tr>
+		<td align="center" id="infodestTD" style="height: 50px; width: 200px; vertical-align: middle;" >
+		<div id="infodest" ></div>
+		</td>
+		<td align="center" id="trancedestTD" style="height: 50px; width: 200px; vertical-align: middle;">
+		<div id="trancedest" ></div>
+		</td>
+	</tr>
+
+	<tr>
+		<td colspan=2>
+			<center><table border=0 width="400px"><tr><td><tt><font size=-1>
+			<font color="#999999">"zaphod waved a hand and the channel switched again.
+			more gunk music, but this time it was a background to a news announcement.
+	
+			<font color="#666666">the news was always heavily edited
+			to fit the rhythms of the music.</font>"</font></font></tt>
+		</td>
+	</tr>
+<!--
+	<tr>
+		<td>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<div align="center"><font size="-1"><tt>drag this bookmarklet to your toolbar: <a href="javascript:window.open('http://infotran.cc/','infotran.cc','width=500,height=275,menubar=no,toolbar=no,scrollbars=no,status=no,location=no,directories=no,resizable=false');">infotran.cc</a></tt></font></div>
+		</td>
+	</tr>
+-->
+</table>
+
+
+</blockquote>
+
+
+<script type="text/javascript" defer="true">
+
+	function play(resultElId, source) {
+		var exp = new Date(); 
+	 	exp.setTime(exp.getTime() + 18000000000); 
+		setCookie( 'source'+source.streamType, source.name,exp);
+		var resultEl = document.getElementById(resultElId);
+		while(resultEl.childNodes.length != 0) {
+			if( typeof resultEl.childNodes[0].ITStop == 'function') {
+				try {
+					resultEl.childNodes[0].ITStop();
+				} catch(err) {};
+			}
+			resultEl.removeChild(resultEl.childNodes[0]);
+		}
+		
+		if ( isRealStream( source.src) ) {
+			var real = getReal(source.src, source);
+			resultEl.appendChild( real );
+			
+		} else if ( isQuicktimeStream( source.src) ) {
+			var qt = getQuicktime(source.src,source);
+			resultEl.appendChild(qt);
+			setTimeout(function(){tryToSetVolumeAndRate(qt,source)},3000);
+			
+		} else if( isWindowsStream( source.src ) ) {
+			var win = getWindows(source.src, source);
+			resultEl.appendChild( win );
+			
+		} else if ( isStaticFile( source.src) ) {
+			var qt = getQuicktime(source.src,source);
+			resultEl.appendChild(qt);
+			setTimeout(function(){tryToSetVolumeAndRate(qt,source)},3000);
+			
+		} else if ( isPodcast( source.src) ) {
+			getPlaylistFromPodcastURL( source.src, 
+									   function(ctx,playlist){ 
+									   		var qt = getQuicktime(playlist, source);
+											resultEl.appendChild(qt);
+											setTimeout(function(){tryToSetVolumeAndRate(qt,source)},3000);
+										}, null);
+		} else {
+
+			alert( "huh?" );
+		}
+	}
+
+	function buildMenu(inputElId, resultElId, typeId) {
+		var inputEl = document.getElementById(inputElId);
+		var select = document.createElement('select');
+		var savedName = unescape(getCookie( 'source' + typeId));
+		var explicitName = getURLParam( 'source' + typeId);
+		if( typeId == TYPE_INFO && !explicitName) {
+			explicitName = getURLParam( 'info');
+		}
+		if( typeId == TYPE_TRANCE && !explicitName) {
+			explicitName = getURLParam( 'trance');
+		}
+		
+		for( var i = 0; i < sources.length; i++ ) {
+			if( isRealStream( sources[i].src) && !hasRealPlugin) {
+				continue;
+			}
+			var canDoWindows = hasQTFlipPlugin || hasWindowsMediaPlugin;
+			if( isWindowsStream( sources[i].src) && !canDoWindows) {
+				continue;
+			}
+			if ((sources[i].streamType == typeId) && (sources[i].enabled)) {
+				var opt = document.createElement('option');
+				opt.appendChild(document.createTextNode(sources[i].name));
+				opt.source = sources[i];
+				select.appendChild(opt);
+				if( explicitName && compareNames(explicitName, sources[i].name)) {
+					play(resultElId, sources[i] );
+					opt.selected=true;
+				} else if(savedName && compareNames(savedName, sources[i].name)) {
+					play(resultElId, sources[i] );
+					opt.selected=true;
+				} else if (select.childNodes.length == 1) {
+					play(resultElId, sources[i] );
+					opt.selected=true;
+				}
+			}
+		}
+		select.onchange = function() {
+			play(resultElId, select.options[select.selectedIndex].source);
+		}
+		inputEl.appendChild(select);
+	}
+	
+	
+	var externalSourceURL;
+	var externalSourceURL_temp;
+	
+	externalSourceURL = getURLParam( 'mysources');
+	if( externalSourceURL.length != 0 ) {
+		setCookie( 'mysources', externalSourceURL);
+	} else {
+		externalSourceURL = unescape( getCookie( 'mysources' ));
+	}
+
+	if( externalSourceURL.length != 0 ) {
+		var dt = new Date();
+		document.write("<script src='" + externalSourceURL + "?random=" + dt.getTime() + "'><" + "/script>");
+	}
+
+	externalSourceURL_temp = getURLParam( 'xsources');
+	if( externalSourceURL_temp.length != 0 ) {
+		var dt = new Date();
+		document.write("<script src='" + externalSourceURL_temp + "?random=" + dt.getTime() + "'><" + "/script>");
+	}
+	
+	
+</script>
+
+<script defer=true>
+	if( (typeof mysources != 'undefined') && (mysources.length != 0)) {
+		sources = sources.concat(mysources);
+	}
+	if( (typeof xsources != 'undefined') && (xsources.length != 0)) {
+		sources = sources.concat(xsources);
+	}
+	checkPlayer();
+	buildMenu('infomenu', 	'infodest', 	TYPE_INFO);
+	buildMenu('trancemenu', 'trancedest', 	TYPE_TRANCE);
+</script>
+
+</body>
+</html>
