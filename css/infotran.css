@@ -1,0 +1,52 @@
+div.players {
+	padding: 0px;
+	margin-left: auto;
+	margin-right: auto;
+	height: 200px;
+	display: block;
+	width: 404px;
+}
+
+div.player {
+	height: 200px;
+	width: 200px;
+	display: inline-block;
+	margin: 0px;
+	top: 0px;
+}
+
+div.player h2 {
+	text-align: center;
+}
+
+div.player select {
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+}
+
+@media only screen and (max-width: 736.99px)  {
+	
+	div.players {
+		height: auto;
+		width: auto;
+	}
+
+	div.player {
+		height: auto;
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	div.player h2 {
+		text-align: left;
+	}
+
+	div.player select {
+		margin-left: 0px;
+		margin-right: auto;
+		display: block;
+	}
+
+}
